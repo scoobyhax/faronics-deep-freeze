@@ -1,0 +1,122 @@
+#pragma autorecover
+#pragma classflags("forceupdate")   // Write even if instance is open
+
+#pragma namespace ("\\\\.\\root")
+instance of __Namespace
+{
+  Name = "Faronics";
+};
+
+#pragma namespace ("\\\\.\\root\\Faronics")
+
+#pragma classflags("safeupdate")   // Write even if instance is open
+
+class Win32_ProviderEx : __Win32Provider
+{
+  [Description ( "Hosting Model, provides compatibility with Windows XP and Windows Server .NET. Do not override." ) , Override ("HostingModel")]
+    string HostingModel = "NetworkServiceHost";
+  [Description("..."),Override("SecurityDescriptor")] 
+    string SecurityDescriptor; 
+  UInt32 version = 1;
+};
+
+instance of Win32_ProviderEx as $DeepFreezeWmiProvider
+{
+  Name    = "Faronics_DeepFreeze_WmiProvider_1" ;        // Name is the key property
+                                                         // vendor|provider|version is the suggested format
+  HostingModel = "Decoupled:Com:FoldIdentity(FALSE)" ;
+  ClsId   = "{92C14F6F-7043-42e6-A136-E3B17A5C4E94}" ;   // Provider GUID
+  DefaultMachineName = NULL;                             // NULL for local machine
+  ClientLoadableCLSID = NULL;                            // reserved
+  ImpersonationLevel = 0;                                // reserved
+  InitializationReentrancy = 0;                          // 0 = all inits serialized
+  InitializeAsAdminFirst = FALSE;
+  PerLocaleInitialization = FALSE;
+  PerUserInitialization = FALSE;                         // If FALSE, provider is init once for all users
+  Pure = TRUE;                                           // pure = only service requests from apps & WMI.
+                                                         // Non-pure = "transition to the role of client"
+                                                         // after finished servicing requests.
+  UnloadTimeout = NULL;                                  // Currently ignored
+} ;    
+
+instance of __InstanceProviderRegistration
+{
+  Provider = $DeepFreezeWmiProvider;
+
+  SupportsPut = "FALSE";
+  SupportsGet = "TRUE";
+  SupportsDelete = "FALSE";
+  SupportsEnumeration = "TRUE";
+};
+
+instance of __MethodProviderRegistration
+{
+  Provider = $DeepFreezeWmiProvider;
+};
+
+
+// ------------------------------------------------------------
+// Note: Before class DeepFreeze can be created, class
+//       FaronicsProduct and FaronicsProduct_v2 must be created
+//       FIRST (by running FaronicsProduct.mof and FaronicsProduct_v2.mof)
+// ------------------------------------------------------------
+
+[
+  dynamic: ToInstance,
+  provider("Faronics_DeepFreeze_WmiProvider_1"): ToInstance
+]
+class DeepFreeze : FaronicsProduct_v2
+{
+  // -----------------------------------------------------------------
+  // Inherited from FaronicsProduct_v2:
+  // -----------------------------------------------------------------
+  // string ProductId;
+  // string ProductName;	
+  // string Version;	
+  // string ProductCode;	
+  // uint32 StatusFlags;
+  // DateTime LicenseExpiryDate;
+
+	
+  // -----------------------------------------------------------------
+  // Deep Freeze-specific props and methods:
+  // -----------------------------------------------------------------
+
+  sint64 DFStatus;
+  // See below for comments on DFStatus
+  datetime LastDFConfigUpdate;
+  string DFInstallationFilename;
+  string DFLicenseKey;
+  uint32 ThawedTime;
+  string ThawSpaces;
+
+  [implemented, static] uint32 GetDFTime([IN] string CustCode, [out] string DFTime, [out] sint32 ResultCode);
+  [implemented, static] uint32 RebootThawed([IN] string DFTime, [in] sint32 Reboots, [out] sint32 ResultCode);
+  [implemented, static] uint32 RebootFrozen([IN] string DFTime, [out] sint32 ResultCode);
+  [implemented, static] uint32 EndWorkstationTask([IN] string DFTime, [out] sint32 ResultCode);  
+  [implemented, static] uint32 Upgrade([IN] string DFTime, [IN] string DFWksInstallerPath, [out] sint32 ResultCode);
+  [implemented, static] uint32 Uninstall([IN] string DFTime, [out] sint32 ResultCode);
+  [implemented, static] uint32 Lock([IN] string DFTime, [out] sint32 ResultCode);
+  [implemented, static] uint32 Unlock([IN] string DFTime, [out] sint32 ResultCode);
+  [implemented, static] uint32 ThawLock([IN] string DFTime, [in] sint32 Reboots, [out] sint32 ResultCode);
+  [implemented, static] uint32 UpgradeLicense([IN] string DFTime, [IN] string LicenseKey, [out] sint32 ResultCode);
+  [implemented, static] uint32 RunWindowsUpdate([IN] string DFTime, [out] sint32 ResultCode);
+  [implemented, static] uint32 UpdateConfig([IN] string DFTime, [IN] string ConfigFilePath, [out] sint32 ResultCode);
+  [implemented, static] uint32 PerformMaintenanceNow([IN] string DFTime, [IN] uint32 RunType, [IN] uint32 Duration, [IN] boolean DisableInput, [out] sint32 ResultCode);
+  [implemented, static] uint32 FormatThawSpace([IN] string DFTime, [IN] string Drives, [out] sint32 ResultCode);
+  [implemented, static] uint32 DeleteThawSpace([IN] string DFTime, [IN] string Drives, [out] sint32 ResultCode);
+};
+
+// NOTE: These are the different values for DFStatus
+//
+//	DF_WRKSTATION_STATUS_BASIC_WKS                 0xF0000000
+//	DF_WRKSTATION_STATUS_FROZEN                    0x00000001
+//	DF_WRKSTATION_STATUS_THAWED                    0x00000002
+//	DF_WRKSTATION_STATUS_THAWED_IN_MNTNC           0x01000000
+//	DF_WRKSTATION_STATUS_NO_INPUT                  0x02000000
+//	DF_WRKSTATION_STATUS_THAWED_LICENSE_EXP        0x04000000
+//	DF_WRKSTATION_STATUS_THAWED_LOCKED             0x08000000
+//	DF_WRKSTATION_STATUS_ERROR                     0x00000008
+// The following states are not reported by the DF WMI Provider
+//	DF_WRKSTATION_STATUS_TARGET                    0x00000010    // Seed
+//	DF_WRKSTATION_STATUS_UNINSTALLED               0x00000020

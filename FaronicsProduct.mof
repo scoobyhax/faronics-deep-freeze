@@ -1,0 +1,27 @@
+// FaronicsProduct.mof
+//
+// Process with MofComp.exe to add to the WMI repository
+
+
+// This MOF file exists to create the "FaronicsProduct" class.
+// It creates using "safeupdate" so it doesn't overwrite (which would delete
+//    product classes beneath it. This class is never expected to change since
+//    it's just an empty base class for organizing the tree structure.
+
+#pragma autorecover
+#pragma classflags("safeupdate") 
+
+#pragma namespace ("\\\\.\\root")
+instance of __Namespace
+{
+   Name = "Faronics";
+};
+
+#pragma namespace ("\\\\.\\root\\Faronics")
+
+[abstract,
+ Description("Base Class to group together all WMI classes used by Faronics products")]
+class FaronicsProduct
+{
+};
+

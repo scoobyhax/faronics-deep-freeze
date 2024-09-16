@@ -1,0 +1,116 @@
+// FaronicsProduct_v2.mof
+//
+// Process with MofComp.exe to add to the WMI repository
+//
+// You must mofcomp "FaronicsProduct.mof" before this one, 
+//	  to create "FaronicsProduct_v2" and "FaronicsProduct" classes.
+
+// This MOF file exists to create the "FaronicsProduct_v2" class.
+
+// We write it using safeupdate so it fails rather than overwrite, to avoid 
+//    deleting product classes and instances that may already exist beneath it.
+// Because products derive from this class, any future changes will probably
+//    take place under a new class version, e.g. FaronicsProduct_v3.
+
+#pragma autorecover
+#pragma namespace ("\\\\.\\root\\Faronics")
+
+[  abstract,
+   singleton: ToSubClass DisableOverride,   
+   Description("Abstract base class that all Faronics products derive from. (Version 2)")]
+class FaronicsProduct_v2 : FaronicsProduct
+{
+   // Note: consider setting this property as a static value for the product 
+   // class, rather than having to fill it in the instance.
+   [  Required,                                 //'Required' means that a non-NULL value is required for the property.
+      Read,
+      ReportToFCC(false): ToInstance ToSubClass, //If false, then the Faronics Core Agent will ignore this property when reporting status to the console
+      Description("Internal Product Id, a GUID including the {} curly braces.")]
+   string ProductId;
+   
+   
+   [  Required,
+      Read,
+      ReportToFCC(false): ToInstance ToSubClass,
+      Description("Name of the product (Not localized).")]
+   string ProductName;
+	
+	
+   [  Required,
+      Read,
+      MaxLen(19),
+      ReportToFCC(true): ToInstance ToSubClass, 
+      Description("Product Version Number in the standard Windows format, e.g. 256.256.1.100")]
+   string Version;
+   
+   	
+   [  Required,
+      Read,
+      MaxLen(3), 
+      ReportToFCC(false): ToInstance ToSubClass, 
+      Description("3-letter product code.")]
+   string ProductCode;
+
+
+   //status flags bits 0-27 are reserved and have pre-defined meanings. bits 28-31 are product-specific
+   //note that bit 0 is the Least Significant Bit
+   //bits 0-3 are used to define the following, mutually exclusive licensing scenarios
+   //0000 - License not required
+   //0001 - License required but not configured (on 30-day eval)
+   //0010 - Eval license (expires on a specific date)
+   //0011 - Full license (also known as 'Standard')
+   //0100 - [Reserved]
+   //0101 - Not for resale
+   //0110 - [Reserved]
+   //0111 - [Reserved]
+   //1000 - [Reserved]
+   //1001 - [Reserved]
+   //1010 - SubscriptionEval
+   //1011 - Subscription
+   //1100 - [Reserved]
+   //1101 - SubscriptionNotForResale
+   //1110 - [Reserved]
+   //1111 - [Reserved]
+   //bit 4 - license has expired (yes = 1, no = 0)
+   //bit 5 - debug build = 1, release build = 0
+   //bit 6 - product is installed (1) or uninstalled (0)
+   //bit 7 - product enabled mode is enabled (1) or disabled (0)
+   //bit 8 - product in stealth mode yes (1) or no (0)
+   //bit 9 - product in learning/audit mode
+   //bit 10 - product in maintenance mode
+   //bits 10-15 reserved for future product modes
+   //bit 16  product supports centralized maintenance mode (1 = yes, 0 = no)
+   //bits 17-21 reserved for future maintenance mode status
+   //bits 22-26 reserved
+   //bits 27-31 available for product-specific status flags
+   //bit 30 - Ignore local settings
+   //bit 31 - Product type ( DF Std or DF Cloud )
+   [  Required,
+      Read,
+      ReportToFCC(true): ToInstance ToSubClass, 
+      Description("Extended product status flags. Bit meanings are described in the SDK workstation product rules.")]
+   sint32 StatusFlags;
+   
+   
+   [  Read,
+      ReportToFCC(true): ToInstance ToSubClass, 
+      Description("Time and Date that the Product Trial or Beta version will expire. May be null if the product is a release version.")]
+   DateTime LicenseExpiryDate;
+};
+
+
+
+[abstract,
+ Description("Abstract base to group together all WMI classes used as method parameters by Faronics products")]
+class FaronicsMethodParameters : FaronicsProduct
+{
+};
+
+
+
+[abstract,
+ Description("Abstract base to group together any data that Faronics products store in the CIM Repository.")]
+class FaronicsProductData : FaronicsProduct
+{
+};
+
